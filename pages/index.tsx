@@ -27,6 +27,8 @@ const GC: React.FC<{ socket: Socket }> = ({ socket }) => {
   let [word, setWord] = useState("");
   let [letter, setLetter] = useState("");
 
+  socket?.onAny(console.log);
+
   return (
     <>
       <div>
