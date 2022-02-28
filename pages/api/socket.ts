@@ -1,11 +1,11 @@
 import { NextApiHandler } from "next";
 import { Server } from "Socket.IO";
+import Room from "../../utils/Room";
 import { LetterHandler } from "../../utils/Types/SocketEvents";
 import State from "../../utils/Types/State";
 
-let state: State = {
-  word: "",
-};
+let rooms: Room[] = [];
+let freeRoom: Room | undefined;
 
 const SocketHandler: NextApiHandler = (req, res) => {
   if ((res.socket as any)?.server?.io) {
@@ -17,14 +17,16 @@ const SocketHandler: NextApiHandler = (req, res) => {
 
     io.on("connection", (socket) => {
       console.log("Socket connected");
-      socket.on("letter", ((letter, ack) => {
-        console.log("Letter received: ", letter);
-        state.word += letter;
-        ack({
-          success: true,
-          state,
-        });
-      }) as LetterHandler);
+
+      if (!freeRoom) {
+        console.log("Creating new room");
+        freeRoom = new Room(io);
+      }
+      freeRoom.addPlayer(socket);
+      if (freeRoom.state.isPlaying) {
+        rooms.push(freeRoom);
+        freeRoom = undefined;
+      }
     });
 
     console.log("Socket initialized");
