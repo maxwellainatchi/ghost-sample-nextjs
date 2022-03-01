@@ -1,15 +1,26 @@
-// import State from "./State";
+export const ServerSentEventNames = {
+  room: {
+    connected: "room.connected",
+  },
+  player: {
+    joined: "player.joined",
+    left: "player.left",
+  },
+  game: {
+    begin: "game.begin",
+    end: "game.end",
+  },
+  round: {
+    begin: "round.begin",
+    end: "round.end",
+  },
+  letter: {
+    received: "letter.received",
+  },
+};
 
-// export type LetterEventPayload = {
-//   letter: string;
-//   state: State;
-// };
-// export type LetterEventResponse = {
-//   state: State;
-//   success: boolean;
-// };
-// export type LetterAck = (response: LetterEventResponse) => void;
-// export type LetterHandler = (
-//   payload: LetterEventPayload,
-//   ack: LetterAck
-// ) => void;
+export const ClientSentEventNames = {
+  letter: {
+    sent: "letter.sent",
+  },
+};

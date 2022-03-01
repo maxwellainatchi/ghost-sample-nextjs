@@ -1,6 +1,7 @@
 import { NextApiHandler } from "next";
 import { Server } from "Socket.IO";
 import Room from "../../utils/Room";
+import { ServerSentEventNames } from "../../utils/Types/SocketEvents";
 
 const SocketHandler: NextApiHandler = (req, res) => {
   if ((res.socket as any)?.server?.io) {
@@ -15,9 +16,9 @@ const SocketHandler: NextApiHandler = (req, res) => {
     io.on("connection", (socket) => {
       console.log("Socket connected");
       const room = Room.findOrCreate(io);
-      socket.emit("connected", {
+      socket.emit(ServerSentEventNames.room.connected, {
         room: room.roomName,
-        state: room.state,
+        state: room.game.state,
       });
       room.addPlayer(socket);
     });

@@ -1,12 +1,15 @@
 import { randomUUID } from "crypto";
 import { Socket, Server } from "socket.io";
-import State, { LossState } from "./Types/State";
-import fs from "fs";
+import Game from "./Game";
+import Round from "./Round";
+import {
+  ClientSentEventNames,
+  ServerSentEventNames,
+} from "./Types/SocketEvents";
 
 export default class Room {
   public static rooms: { [roomName: string]: Room } = {};
   public static limit: number = 2;
-  public static wordlist: string[] = [];
 
   /** Handle global events for all rooms */
   public static initialize(io: Server) {
@@ -19,7 +22,7 @@ export default class Room {
       }
     );
 
-    this.wordlist = fs.readFileSync("./utils/wordlist.txt", "utf8").split("\n");
+    Round.initialize();
   }
 
   public static findOrCreate(io: Server): Room {
@@ -35,21 +38,16 @@ export default class Room {
     return room;
   }
 
-  public state: State;
+  public game: Game;
   public roomName = randomUUID();
+  public players: string[] = [];
 
-  private players: string[] = [];
-
-  private get room() {
+  public get room() {
     return this.io.to(this.roomName);
   }
 
   constructor(private io: Server) {
-    this.state = {
-      word: "",
-      isPlaying: false,
-      turn: "",
-    };
+    this.game = new Game(this);
   }
 
   public addPlayer(player: Socket) {
@@ -61,20 +59,14 @@ export default class Room {
     player.join(this.roomName);
     this.players.push(player.id);
     this.registerEvents(player);
-    this.room.emit("player.joined", {
+    this.room.emit(ServerSentEventNames.player.joined, {
       player: player.id,
-      state: this.state,
+      state: this.game.state,
     });
 
-    if (this.players.length === Room.limit && !this.state.isPlaying) {
-      this.begin();
+    if (this.players.length === Room.limit && !this.game.state.isPlaying) {
+      this.game.begin();
     }
-  }
-
-  public begin() {
-    this.state.isPlaying = true;
-    this.state.turn = this.players[0];
-    this.room.emit("game.begin", this.state);
   }
 
   public close() {
@@ -83,33 +75,8 @@ export default class Room {
   }
 
   public registerEvents(socket: Socket) {
-    socket.on("letter.sent", ({ letter }) => {
-      this.handleLetter(letter, socket);
-    });
-  }
-
-  private handleLetter(letter: string, socket: Socket) {
-    console.log(`Received ${letter} from ${socket.id}`);
-    if (this.state.turn !== socket.id || letter.length !== 1) {
-      return;
-    }
-    this.state.word += letter;
-
-    if (this.checkLoss()) {
-      let lossState: LossState = {
-        ...this.state,
-        loser: this.state.turn,
-      };
-      this.room.emit("game.end", lossState);
-      this.close();
-      return;
-    }
-
-    this.state.turn =
-      this.players[(this.players.indexOf(socket.id) + 1) % this.players.length];
-    this.room.emit("letter.received", {
-      letter,
-      state: this.state,
+    socket.on(ClientSentEventNames.letter.sent, ({ letter }) => {
+      this.game.currentRound?.handleLetter(letter, socket);
     });
   }
 
@@ -118,18 +85,11 @@ export default class Room {
       this.players.splice(this.players.indexOf(playerId), 1);
 
     console.log("Player left");
-    this.room.emit("player.left", {
+    this.room.emit(ServerSentEventNames.player.left, {
       player: playerId,
-      state: this.state,
+      state: this.game.state,
     });
 
     this.close();
-  }
-
-  private checkLoss(): boolean {
-    return (
-      this.state.word.length >= 3 &&
-      Room.wordlist.includes(this.state.word.toLowerCase())
-    );
   }
 }
