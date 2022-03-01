@@ -84,30 +84,32 @@ export default class Room {
 
   public registerEvents(socket: Socket) {
     socket.on("letter.sent", ({ letter }) => {
-      console.log(`Received ${letter} from ${socket.id}`);
-      if (this.state.turn !== socket.id) {
-        return;
-      }
-      this.state.word += letter;
+      this.handleLetter(letter, socket);
+    });
+  }
 
-      if (this.checkLoss()) {
-        let winState: LossState = {
-          ...this.state,
-          loser: this.state.turn,
-        };
-        this.room.emit("game.end", winState);
-        this.close();
-        return;
-      }
+  private handleLetter(letter: string, socket: Socket) {
+    console.log(`Received ${letter} from ${socket.id}`);
+    if (this.state.turn !== socket.id || letter.length !== 1) {
+      return;
+    }
+    this.state.word += letter;
 
-      this.state.turn =
-        this.players[
-          (this.players.indexOf(socket.id) + 1) % this.players.length
-        ];
-      this.room.emit("letter.received", {
-        letter,
-        state: this.state,
-      });
+    if (this.checkLoss()) {
+      let lossState: LossState = {
+        ...this.state,
+        loser: this.state.turn,
+      };
+      this.room.emit("game.end", lossState);
+      this.close();
+      return;
+    }
+
+    this.state.turn =
+      this.players[(this.players.indexOf(socket.id) + 1) % this.players.length];
+    this.room.emit("letter.received", {
+      letter,
+      state: this.state,
     });
   }
 
