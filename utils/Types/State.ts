@@ -5,6 +5,7 @@ export interface GameState<T extends RoundState = RoundState> {
     [key: string]: string;
   };
   isPlaying: boolean;
+  players: string[];
 }
 
 export interface GameStateAfterLoss extends GameState<RoundLossState> {

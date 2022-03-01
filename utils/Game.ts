@@ -16,6 +16,7 @@ export default class Game {
       isPlaying: false,
       currentRoundState: undefined,
       letters: {},
+      players: [],
     };
   }
 

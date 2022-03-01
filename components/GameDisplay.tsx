@@ -63,7 +63,9 @@ const GameDisplay: React.FC<{ socket: Socket; game: GameState }> = ({
       )}
       {isLossState(state) && (
         <>
-          <p>{state.lastRoundState.word}</p>
+          <p style={{ textTransform: "uppercase" }}>
+            {state.lastRoundState.word}
+          </p>
           <button onClick={() => socket.emit(ClientSentEventNames.round.next)}>
             Next Round
           </button>
@@ -72,7 +74,8 @@ const GameDisplay: React.FC<{ socket: Socket; game: GameState }> = ({
       <div>
         {Object.entries(state.letters).map(([name, letters]) => (
           <div key={name}>
-            {name}: {letters}
+            {name}
+            {name === socket.id ? " (you)" : ""}: {letters}
           </div>
         ))}
       </div>

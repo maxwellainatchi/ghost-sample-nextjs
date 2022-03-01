@@ -59,6 +59,7 @@ export default class Room {
 
     player.join(this.roomName);
     this.players.push(player.id);
+    this.game.state.players = this.players;
     this.registerEvents(player);
     this.room.emit(ServerSentEventNames.player.joined, {
       player: player.id,

@@ -42,7 +42,9 @@ const RoomDisplay: React.FC<{ socket: Socket }> = ({ socket }) => {
         canBegin: boolean;
       }) => {
         setGame(state);
-        setEvent(`Player ${player} just joined!`);
+        if (player !== socket.id) {
+          setEvent(`Player ${player} just joined!`);
+        }
         setCanBegin(canBegin);
       }
     );
@@ -71,6 +73,19 @@ const RoomDisplay: React.FC<{ socket: Socket }> = ({ socket }) => {
         >
           Start Game
         </button>
+      )}
+      {!game?.isPlaying && (
+        <>
+          <div>Players:</div>
+          <div>
+            {game?.players.map((player) => (
+              <p>
+                {player}
+                {player === socket.id ? " (you)" : ""}
+              </p>
+            ))}
+          </div>
+        </>
       )}
     </>
   );
