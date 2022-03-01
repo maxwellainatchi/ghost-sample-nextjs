@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import io from "Socket.IO-Client";
 import { Socket } from "socket.io-client";
-import State from "../utils/Types/State";
+import State, { WinState } from "../utils/Types/State";
 
 const socketInitializer = async (): Promise<Socket> => {
   await fetch("/api/socket");
@@ -54,6 +54,13 @@ const GC: React.FC<{ socket: Socket }> = ({ socket }) => {
     socket.on("game.begin", (state: State) => {
       setEvent(`Game started!`);
       setState(state);
+    });
+
+    socket.on("game.end", (state: WinState) => {
+      setState(state);
+      setEvent(
+        `Game ended! You ${state.winner === socket.id ? "win" : "lose"}!`
+      );
     });
   }, []);
 

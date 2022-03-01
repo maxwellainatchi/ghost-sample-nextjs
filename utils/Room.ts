@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { Socket, Server } from "socket.io";
-import State from "./Types/State";
+import State, { WinState } from "./Types/State";
 
 export default class Room {
   public static rooms: { [roomName: string]: Room } = {};
@@ -85,6 +85,17 @@ export default class Room {
         return;
       }
       this.state.word += letter;
+
+      if (this.checkWin()) {
+        let winState: WinState = {
+          ...this.state,
+          winner: this.state.turn,
+        };
+        this.room.emit("game.end", winState);
+        this.close();
+        return;
+      }
+
       this.state.turn =
         this.players[
           (this.players.indexOf(socket.id) + 1) % this.players.length
@@ -106,8 +117,10 @@ export default class Room {
       state: this.state,
     });
 
-    // if (this.players.length < Room.limit) {
     this.close();
-    // }
+  }
+
+  private checkWin(): boolean {
+    return this.state.word.length === 3;
   }
 }
