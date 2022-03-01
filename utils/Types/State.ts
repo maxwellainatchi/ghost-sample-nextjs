@@ -4,6 +4,6 @@ export default interface State {
   turn: string;
 }
 
-export interface WinState extends State {
-  winner: string;
+export interface LossState extends State {
+  loser: string;
 }

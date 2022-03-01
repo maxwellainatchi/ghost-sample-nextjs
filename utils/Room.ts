@@ -1,12 +1,14 @@
 import { randomUUID } from "crypto";
 import { Socket, Server } from "socket.io";
-import State, { WinState } from "./Types/State";
+import State, { LossState } from "./Types/State";
+import fs from "fs";
 
 export default class Room {
   public static rooms: { [roomName: string]: Room } = {};
   public static limit: number = 2;
+  public static wordlist: string[] = [];
 
-  /** Handle global socket events for individual rooms */
+  /** Handle global events for all rooms */
   public static initialize(io: Server) {
     io.of("/").adapter.on(
       "leave-room",
@@ -16,6 +18,8 @@ export default class Room {
         }
       }
     );
+
+    this.wordlist = fs.readFileSync("./utils/wordlist.txt", "utf8").split("\n");
   }
 
   public static findOrCreate(io: Server): Room {
@@ -86,10 +90,10 @@ export default class Room {
       }
       this.state.word += letter;
 
-      if (this.checkWin()) {
-        let winState: WinState = {
+      if (this.checkLoss()) {
+        let winState: LossState = {
           ...this.state,
-          winner: this.state.turn,
+          loser: this.state.turn,
         };
         this.room.emit("game.end", winState);
         this.close();
@@ -120,7 +124,10 @@ export default class Room {
     this.close();
   }
 
-  private checkWin(): boolean {
-    return this.state.word.length === 3;
+  private checkLoss(): boolean {
+    return (
+      this.state.word.length >= 3 &&
+      Room.wordlist.includes(this.state.word.toLowerCase())
+    );
   }
 }
