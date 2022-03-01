@@ -10,12 +10,40 @@ import GameDisplay from "./GameDisplay";
 const RoomDisplay: React.FC<{ socket: Socket }> = ({ socket }) => {
   let [event, setEvent] = useState("");
   let [game, setGame] = useState<GameState>();
+  let [canBegin, setCanBegin] = useState(false);
 
   useEffect(() => {
     socket.on(
       ServerSentEventNames.room.connected,
-      ({ room }: { room: string }) => {
-        setEvent(`Joined game ${room}!`);
+      ({
+        room,
+        state,
+        canBegin,
+      }: {
+        room: string;
+        state: GameState;
+        canBegin: boolean;
+      }) => {
+        setGame(state);
+        setEvent(`Joined room ${room}!`);
+        setCanBegin(canBegin);
+      }
+    );
+
+    socket.on(
+      ServerSentEventNames.player.joined,
+      ({
+        player,
+        state,
+        canBegin,
+      }: {
+        player: string;
+        state: GameState;
+        canBegin: boolean;
+      }) => {
+        setGame(state);
+        setEvent(`Player ${player} just joined!`);
+        setCanBegin(canBegin);
       }
     );
 
@@ -32,7 +60,18 @@ const RoomDisplay: React.FC<{ socket: Socket }> = ({ socket }) => {
     <>
       <h2>Your Name: {socket.id}</h2>
       <h3>{event}</h3>
-      {game && <GameDisplay socket={socket} game={game} />}
+      {game?.isPlaying ? (
+        <GameDisplay socket={socket} game={game} />
+      ) : (
+        <button
+          disabled={!canBegin}
+          onClick={() => {
+            socket.emit(ClientSentEventNames.game.begin);
+          }}
+        >
+          Start Game
+        </button>
+      )}
     </>
   );
 };

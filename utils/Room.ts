@@ -9,7 +9,8 @@ import {
 
 export default class Room {
   public static rooms: { [roomName: string]: Room } = {};
-  public static limit: number = 2;
+  public static min: number = 2;
+  public static max: number = 5;
 
   /** Handle global events for all rooms */
   public static initialize(io: Server) {
@@ -27,7 +28,7 @@ export default class Room {
 
   public static findOrCreate(io: Server): Room {
     let existingRoom = Object.values(this.rooms).find(
-      (room) => room.players.length < Room.limit
+      (room) => room.players.length < Room.max && !room.game.state.isPlaying
     );
     if (existingRoom) {
       return existingRoom;
@@ -51,7 +52,7 @@ export default class Room {
   }
 
   public addPlayer(player: Socket) {
-    if (this.players.length >= Room.limit) {
+    if (this.players.length >= Room.max || this.game.state.isPlaying) {
       console.log("Room is full");
       return;
     }
@@ -62,9 +63,10 @@ export default class Room {
     this.room.emit(ServerSentEventNames.player.joined, {
       player: player.id,
       state: this.game.state,
+      canBegin: this.players.length >= Room.min && !this.game.state.isPlaying,
     });
 
-    if (this.players.length === Room.limit && !this.game.state.isPlaying) {
+    if (this.players.length === Room.max && !this.game.state.isPlaying) {
       this.game.begin();
     }
   }
@@ -80,6 +82,11 @@ export default class Room {
     });
     socket.on(ClientSentEventNames.round.next, () => {
       this.game.beginRound();
+    });
+    socket.on(ClientSentEventNames.game.begin, () => {
+      if (this.players.length >= Room.min && !this.game.state.isPlaying) {
+        this.game.begin();
+      }
     });
   }
 

@@ -71,7 +71,7 @@ const GameDisplay: React.FC<{ socket: Socket; game: GameState }> = ({
       )}
       <div>
         {Object.entries(state.letters).map(([name, letters]) => (
-          <div>
+          <div key={name}>
             {name}: {letters}
           </div>
         ))}

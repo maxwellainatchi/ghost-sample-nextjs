@@ -19,6 +19,7 @@ const SocketHandler: NextApiHandler = (req, res) => {
       socket.emit(ServerSentEventNames.room.connected, {
         room: room.roomName,
         state: room.game.state,
+        canBegin: room.players.length >= Room.min && !room.game.state.isPlaying,
       });
       room.addPlayer(socket);
     });

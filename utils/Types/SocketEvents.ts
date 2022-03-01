@@ -26,4 +26,7 @@ export const ClientSentEventNames = {
   round: {
     next: "round.next",
   },
+  game: {
+    begin: "game.begin",
+  },
 };
