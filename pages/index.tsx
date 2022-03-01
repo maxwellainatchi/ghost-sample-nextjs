@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import io from "Socket.IO-Client";
 import { Socket } from "socket.io-client";
-import { LetterAck } from "../utils/Types/SocketEvents";
+import State from "../utils/Types/State";
 
 const socketInitializer = async (): Promise<Socket> => {
   await fetch("/api/socket");
@@ -24,26 +24,50 @@ const useSocket = (): Socket | undefined => {
 };
 
 const GC: React.FC<{ socket: Socket }> = ({ socket }) => {
-  let [word, setWord] = useState("");
+  let [state, setState] = useState<State>({
+    isPlaying: false,
+    turn: "",
+    word: "",
+  });
+
   let [letter, setLetter] = useState("");
 
-  socket?.onAny(console.log);
+  useEffect(() => {
+    socket.onAny(console.log);
+
+    socket.on(
+      "letter.received",
+      ({ letter, state }: { letter: string; state: State }) => {
+        setState(state);
+      }
+    );
+
+    socket.on(
+      "connected",
+      ({ roomName, state }: { roomName: string; state: State }) => {
+        setState(state);
+      }
+    );
+
+    socket.on("game.begin", (state: State) => {
+      setState(state);
+    });
+  }, []);
 
   return (
     <>
-      <div>
-        {word}
-        <span style={{ color: "grey" }}>{letter.toUpperCase()}</span>
+      {}
+      <div style={{ textTransform: "uppercase" }}>
+        {state?.word}
+        <span style={{ color: "grey" }}>{letter}</span>
       </div>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          socket.emit("letter", letter, ((response) => {
-            if (!response.success) {
-              console.log("fail");
-            }
-            setWord(response.state.word);
-          }) as LetterAck);
+          socket.emit("letter.sent", {
+            letter,
+          });
+          setLetter("");
           return false;
         }}
       >
@@ -55,7 +79,9 @@ const GC: React.FC<{ socket: Socket }> = ({ socket }) => {
           value={letter}
           onChange={({ target: { value } }) => setLetter(value)}
         />
-        <button type="submit">Submit</button>
+        <button type="submit" disabled={state.turn !== socket.id}>
+          Submit
+        </button>
       </form>
     </>
   );

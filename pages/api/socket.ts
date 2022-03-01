@@ -15,6 +15,10 @@ const SocketHandler: NextApiHandler = (req, res) => {
     io.on("connection", (socket) => {
       console.log("Socket connected");
       const room = Room.findOrCreate(io);
+      socket.emit("connected", {
+        room: room.roomName,
+        state: room.state,
+      });
       room.addPlayer(socket);
     });
 

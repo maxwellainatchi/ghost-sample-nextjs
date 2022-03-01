@@ -20,7 +20,7 @@ export default class Room {
 
   public static findOrCreate(io: Server): Room {
     let existingRoom = Object.values(this.rooms).find(
-      (room) => room.numberOfPlayers < Room.limit
+      (room) => room.players.length < Room.limit
     );
     if (existingRoom) {
       return existingRoom;
@@ -31,9 +31,10 @@ export default class Room {
     return room;
   }
 
-  public numberOfPlayers = 0;
   public state: State;
   public roomName = randomUUID();
+
+  private players: string[] = [];
 
   private get room() {
     return this.io.to(this.roomName);
@@ -43,41 +44,51 @@ export default class Room {
     this.state = {
       word: "",
       isPlaying: false,
+      turn: "",
     };
   }
 
   public addPlayer(player: Socket) {
-    if (this.numberOfPlayers >= Room.limit) {
+    if (this.players.length >= Room.limit) {
       console.log("Room is full");
       return;
     }
 
     player.join(this.roomName);
+    this.players.push(player.id);
     this.registerEvents(player);
     this.room.emit("player.joined", {
       player: player.id,
       state: this.state,
     });
 
-    this.numberOfPlayers++;
-    if (this.numberOfPlayers === Room.limit && !this.state.isPlaying) {
+    if (this.players.length === Room.limit && !this.state.isPlaying) {
       this.begin();
     }
   }
 
   public begin() {
     this.state.isPlaying = true;
+    this.state.turn = this.players[0];
     this.room.emit("game.begin", this.state);
   }
 
   public close() {
     this.room.disconnectSockets();
+    delete Room.rooms[this.roomName];
   }
 
   public registerEvents(socket: Socket) {
-    socket.on("letter", (letter, ack) => {
-      console.log("Letter received: ", letter);
+    socket.on("letter.sent", ({ letter }) => {
+      console.log(`Received ${letter} from ${socket.id}`);
+      if (this.state.turn !== socket.id) {
+        return;
+      }
       this.state.word += letter;
+      this.state.turn =
+        this.players[
+          (this.players.indexOf(socket.id) + 1) % this.players.length
+        ];
       this.room.emit("letter.received", {
         letter,
         state: this.state,
@@ -86,15 +97,17 @@ export default class Room {
   }
 
   private handlePlayerLeaving(playerId: string) {
+    this.players.indexOf(playerId) !== -1 &&
+      this.players.splice(this.players.indexOf(playerId), 1);
+
     console.log("Player left");
-    this.numberOfPlayers--;
     this.room.emit("player.left", {
       player: playerId,
       state: this.state,
     });
 
-    if (this.numberOfPlayers === 0) {
-      this.close();
-    }
+    // if (this.players.length < Room.limit) {
+    this.close();
+    // }
   }
 }
