@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { stat } from "fs/promises";
 import { useEffect, useState } from "react";
 import { Socket } from "socket.io-client";
 import {
@@ -13,6 +14,10 @@ import {
 } from "../utils/Types/State";
 import RoundDisplay from "./RoundDisplay";
 
+const isLossState: (state: GameState) => state is GameStateAfterLoss = (
+  state
+) => "lastRoundState" in state;
+
 const GameDisplay: React.FC<{ socket: Socket; game: GameState }> = ({
   socket,
   game,
@@ -21,13 +26,28 @@ const GameDisplay: React.FC<{ socket: Socket; game: GameState }> = ({
   let [event, setEvent] = useState("");
 
   useEffect(() => {
+    socket.on(ServerSentEventNames.round.begin, (state: GameState) => {
+      setState(state);
+      setEvent("Round has begun!");
+    });
+    socket.on(
+      ServerSentEventNames.letter.received,
+      ({ letter, state }: { letter: string; state: GameState }) => {
+        setState(state);
+        setEvent(
+          socket.id === state.currentRoundState!.turn
+            ? "Your turn"
+            : "Opponent's turn"
+        );
+      }
+    );
     socket.on(
       ServerSentEventNames.round.end,
       (lossState: GameStateAfterLoss) => {
         // TODO: handle game end
         setState(lossState);
         setEvent(
-          `Game ended! You ${
+          `Round ended! You ${
             lossState.lastRoundState.loser === socket.id ? "lose" : "win"
           }!`
         );
@@ -38,9 +58,24 @@ const GameDisplay: React.FC<{ socket: Socket; game: GameState }> = ({
   return (
     <>
       <h3>{event}</h3>
-      {game.currentRoundState && (
-        <RoundDisplay socket={socket} round={game.currentRoundState} />
+      {state.currentRoundState && (
+        <RoundDisplay socket={socket} round={state.currentRoundState} />
       )}
+      {isLossState(state) && (
+        <>
+          <p>{state.lastRoundState.word}</p>
+          <button onClick={() => socket.emit(ClientSentEventNames.round.next)}>
+            Next Round
+          </button>
+        </>
+      )}
+      <div>
+        {Object.entries(state.letters).map(([name, letters]) => (
+          <div>
+            {name}: {letters}
+          </div>
+        ))}
+      </div>
     </>
   );
 };

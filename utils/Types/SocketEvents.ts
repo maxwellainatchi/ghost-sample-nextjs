@@ -23,4 +23,7 @@ export const ClientSentEventNames = {
   letter: {
     sent: "letter.sent",
   },
+  round: {
+    next: "round.next",
+  },
 };

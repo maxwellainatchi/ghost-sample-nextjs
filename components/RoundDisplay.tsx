@@ -16,41 +16,12 @@ const RoundDisplay: React.FC<{ socket: Socket; round: RoundState }> = ({
   socket,
   round,
 }) => {
-  let [state, setState] = useState<RoundState>(round);
-  let [event, setEvent] = useState("");
   let [letter, setLetter] = useState("");
-
-  useEffect(() => {
-    socket.on(ServerSentEventNames.round.begin, (roundState: RoundState) => {
-      setState(roundState);
-      setEvent("Round has begun!");
-    });
-    socket.on(
-      ServerSentEventNames.letter.received,
-      ({ letter, state }: { letter: string; state: RoundState }) => {
-        setEvent(socket.id === state.turn ? "Your turn" : "Opponent's turn");
-        setState(state);
-      }
-    );
-    socket.on(
-      ServerSentEventNames.round.end,
-      (lossState: GameStateAfterLoss) => {
-        // TODO: handle game end
-        setState(lossState.lastRoundState);
-        setEvent(
-          `Round ended! You ${
-            lossState.lastRoundState.loser === socket.id ? "lose" : "win"
-          }!`
-        );
-      }
-    );
-  }, []);
 
   return (
     <>
-      <h3>{event}</h3>
       <div style={{ textTransform: "uppercase" }}>
-        {state.word}
+        {round.word}
         <span style={{ color: "grey" }}>{letter}</span>
       </div>
       <form
@@ -71,7 +42,7 @@ const RoundDisplay: React.FC<{ socket: Socket; round: RoundState }> = ({
           value={letter}
           onChange={({ target: { value } }) => setLetter(value)}
         />
-        <button type="submit" disabled={state.turn !== socket.id}>
+        <button type="submit" disabled={round.turn !== socket.id}>
           Submit
         </button>
       </form>

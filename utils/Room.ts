@@ -78,6 +78,9 @@ export default class Room {
     socket.on(ClientSentEventNames.letter.sent, ({ letter }) => {
       this.game.currentRound?.handleLetter(letter, socket);
     });
+    socket.on(ClientSentEventNames.round.next, () => {
+      this.game.beginRound();
+    });
   }
 
   private handlePlayerLeaving(playerId: string) {

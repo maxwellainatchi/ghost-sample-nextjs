@@ -30,6 +30,7 @@ const RoomDisplay: React.FC<{ socket: Socket }> = ({ socket }) => {
 
   return (
     <>
+      <h2>Your Name: {socket.id}</h2>
       <h3>{event}</h3>
       {game && <GameDisplay socket={socket} game={game} />}
     </>

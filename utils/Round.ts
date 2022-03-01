@@ -33,7 +33,7 @@ export default class Round {
   public begin() {
     this.state.isPlaying = true;
     this.state.turn = this.players[0];
-    this.room.emit(ServerSentEventNames.round.begin, this.state);
+    this.room.emit(ServerSentEventNames.round.begin, this.game.state);
   }
 
   public handleLetter(letter: string, socket: Socket) {
@@ -52,7 +52,7 @@ export default class Round {
       this.players[(this.players.indexOf(socket.id) + 1) % this.players.length];
     this.room.emit(ServerSentEventNames.letter.received, {
       letter,
-      state: this.state,
+      state: this.game.state,
     });
   }
 
