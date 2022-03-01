@@ -29,7 +29,7 @@ const GC: React.FC<{ socket: Socket }> = ({ socket }) => {
     turn: "",
     word: "",
   });
-
+  let [event, setEvent] = useState("");
   let [letter, setLetter] = useState("");
 
   useEffect(() => {
@@ -38,25 +38,28 @@ const GC: React.FC<{ socket: Socket }> = ({ socket }) => {
     socket.on(
       "letter.received",
       ({ letter, state }: { letter: string; state: State }) => {
+        setEvent(socket.id === state.turn ? "Your turn" : "Opponent's turn");
         setState(state);
       }
     );
 
     socket.on(
       "connected",
-      ({ roomName, state }: { roomName: string; state: State }) => {
+      ({ room, state }: { room: string; state: State }) => {
         setState(state);
+        setEvent(`Joined game ${room}!`);
       }
     );
 
     socket.on("game.begin", (state: State) => {
+      setEvent(`Game started!`);
       setState(state);
     });
   }, []);
 
   return (
     <>
-      {}
+      <h3>{event}</h3>
       <div style={{ textTransform: "uppercase" }}>
         {state?.word}
         <span style={{ color: "grey" }}>{letter}</span>
