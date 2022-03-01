@@ -1,16 +1,7 @@
-import { randomUUID } from "crypto";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Socket } from "socket.io-client";
-import {
-  ClientSentEventNames,
-  ServerSentEventNames,
-} from "../utils/Types/SocketEvents";
-import {
-  GameState,
-  GameStateAfterLoss,
-  RoundLossState,
-  RoundState,
-} from "../utils/Types/State";
+import { ClientSentEventNames } from "../utils/Types/SocketEvents";
+import { RoundState } from "../utils/Types/State";
 
 const RoundDisplay: React.FC<{ socket: Socket; round: RoundState }> = ({
   socket,
